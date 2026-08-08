@@ -79,9 +79,21 @@ class ClearanceAPIServer:
     #  PROXY
     # ──────────────────────────────────────────────
 
+    PROXY_FETCH_URLS = [
+        "https://raw.githubusercontent.com/VPSLabCloud/VPSLab-Free-Proxy-List/refs/heads/main/http_ssl_elite.txt",
+        "https://raw.githubusercontent.com/elliottophellia/proxylist/refs/heads/master/results/http/country/SG/http_SG_checked.txt",
+    ]
+
     def _load_proxies(self):
         if not self.proxy_support:
             return
+        # Coba fetch dari remote dulu
+        fetched = self._fetch_remote_proxies()
+        if fetched:
+            self.proxies = fetched
+            logger.success(f"Memuat {len(self.proxies)} proxy dari remote URL")
+            return
+        # Fallback ke file lokal
         if not os.path.isfile(self.proxy_file):
             logger.warning(f"proxy_support aktif tapi file '{self.proxy_file}' tidak ditemukan.")
             return
@@ -89,6 +101,29 @@ class ClearanceAPIServer:
             lines = [ln.strip() for ln in f if ln.strip() and not ln.startswith("#")]
         self.proxies = lines
         logger.info(f"Memuat {len(self.proxies)} proxy dari '{self.proxy_file}'")
+
+    def _fetch_remote_proxies(self):
+        """Fetch proxy dari remote URL, return list proxy atau [] kalau gagal."""
+        import urllib.request
+        proxies = []
+        for url in self.PROXY_FETCH_URLS:
+            try:
+                req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    text = resp.read().decode("utf-8")
+                count_before = len(proxies)
+                for line in text.splitlines():
+                    line = line.strip()
+                    if not line or line.startswith("#"):
+                        continue
+                    # Format ip:port → tambah http://
+                    if line.count(":") == 1:
+                        line = f"http://{line}"
+                    proxies.append(line)
+                logger.info(f"Fetch {len(proxies) - count_before} proxy dari {url}")
+            except Exception as e:
+                logger.warning(f"Gagal fetch proxy dari {url}: {e}")
+        return proxies
 
     def _next_proxy(self):
         if not self.proxies:
