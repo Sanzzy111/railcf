@@ -7,6 +7,7 @@ ENV DISPLAY=:99
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb \
     x11-utils \
+    libgtk-3-0 \
     libnss3 \
     libnspr4 \
     libx11-6 \
@@ -26,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxkbcommon0 \
     libglib2.0-0 \
     libdbus-1-3 \
+    libdbus-glib-1-2 \
     libdrm2 \
     libgbm1 \
     libgl1-mesa-dri \
@@ -37,7 +39,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
     libcairo2 \
+    libcairo-gobject2 \
     libwayland-client0 \
+    libwayland-egl1 \
     libasound2t64 \
     fonts-liberation \
     curl \
@@ -47,10 +51,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
-RUN python -m patchright install chromium --with-deps
+RUN python -m camoufox fetch
 
 COPY . .
 RUN chmod +x /app/start.sh
 
-EXPOSE 8080
+EXPOSE 10000
 CMD ["/app/start.sh"]

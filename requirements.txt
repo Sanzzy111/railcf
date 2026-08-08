@@ -1,5 +1,5 @@
 fastapi==0.95.2
 uvicorn
-patchright
+camoufox[geoip]
 loguru
 psutil

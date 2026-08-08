@@ -7,7 +7,7 @@ import asyncio
 from fastapi import FastAPI, Query, HTTPException, Request
 from fastapi.responses import JSONResponse
 from loguru import logger
-from patchright.async_api import async_playwright
+from camoufox.async_api import AsyncCamoufox
 import uvicorn
 
 # Kompatibilitas Windows
@@ -54,7 +54,7 @@ class ClearanceAPIServer:
             "--no-sandbox",
             "--disable-setuid-sandbox",
         ]
-        self._playwright = None
+        self._camoufox = None
         self.browser = None
         self.results = {}
         self.contexts = []  # Track semua context agar bisa di-restart dengan aman
@@ -186,29 +186,15 @@ class ClearanceAPIServer:
             await self.browser.close()
         except Exception as e:
             logger.warning(f"Error saat menutup browser: {e}")
-        try:
-            await self._playwright.stop()
-        except Exception:
-            pass
+
         logger.success("Browser berhasil ditutup")
 
     async def _initialize_browser(self):
         self._load_proxies()
-        logger.info("Mencoba start Chromium via patchright...")
-        self._playwright = await async_playwright().start()
-        self.browser = await self._playwright.chromium.launch(
-            headless=True,
-            args=self.browser_args + [
-                "--disable-gpu",
-                "--no-sandbox",
-                "--disable-dev-shm-usage",
-                "--disable-setuid-sandbox",
-                "--disable-blink-features=AutomationControlled",
-                "--disable-infobars",
-                "--window-size=1280,720",
-            ]
-        )
-        logger.info("Chromium berhasil start!")
+        logger.info("Mencoba start Camoufox...")
+        self._camoufox = AsyncCamoufox(headless=True)
+        self.browser = await self._camoufox.start()
+        logger.info("Camoufox berhasil start!")
         await self._build_page_pool()
         logger.success(f"Pool siap: {self.page_pool.qsize()} halaman")
         asyncio.create_task(self._cleanup_results())
